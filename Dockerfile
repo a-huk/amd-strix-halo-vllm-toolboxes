@@ -84,13 +84,13 @@ RUN echo "import sys, re" > patch_strix.py && \
     echo "txt = p.read_text()" >> patch_strix.py && \
     echo "header = 'import sys\nfrom unittest.mock import MagicMock\nsys.modules[\"amdsmi\"] = MagicMock()\n'" >> patch_strix.py && \
     echo "txt = header + txt" >> patch_strix.py && \
-    echo "txt = re.sub(r'device_type = .*', 'device_type = \"rocm\"', txt)" >> patch_strix.py && \   # CHANGED (was "cuda")
-    echo "txt = re.sub(r'device_name = .*', 'device_name = \"gfx1151\"', txt)" >> patch_strix.py && \ # CHANGED (was "cuda")
+    echo "txt = re.sub(r'device_type = .*', 'device_type = \"rocm\"', txt)" >> patch_strix.py && \  
+    echo "txt = re.sub(r'device_name = .*', 'device_name = \"gfx1151\"', txt)" >> patch_strix.py && \ 
     echo "txt += '\n    def get_device_name(self, device_id: int = 0) -> str:\n        return \"AMD-gfx1151\"\n'" >> patch_strix.py && \
     echo "p.write_text(txt)" >> patch_strix.py && \
     echo "print('Successfully patched vLLM for Strix Halo')" >> patch_strix.py && \
     python patch_strix.py && \
-    sed -i 's/gfx1200;gfx1201/gfx1151/' CMakeLists.txt     # CHANGED (was gfx1200;gfx1201)
+    sed -i 's/gfx1200;gfx1201/gfx1151/' CMakeLists.txt  
 
 # 7. Build vLLM (Wheel Method) with CLANG Host Compiler
 RUN python -m pip install --upgrade cmake ninja packaging wheel numpy "setuptools-scm>=8" "setuptools<80.0.0" scikit-build-core pybind11
