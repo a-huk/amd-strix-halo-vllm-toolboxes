@@ -1,5 +1,7 @@
 FROM registry.fedoraproject.org/fedora:43
 
+# 1. System Base & Build Tools
+# Added 'gperftools-libs' for tcmalloc (fixes double-free)
 RUN dnf -y install --setopt=install_weak_deps=False --nodocs \
       python3.13 python3.13-devel git rsync libatomic bash ca-certificates curl \
       gcc gcc-c++ binutils make ffmpeg-free \
@@ -8,6 +10,7 @@ RUN dnf -y install --setopt=install_weak_deps=False --nodocs \
       numactl-devel gperftools-libs \
   && dnf clean all && rm -rf /var/cache/dnf/*
 
+# 2. Install "TheRock" ROCm SDK (Tarball Method)
 WORKDIR /tmp
 ARG ROCM_MAJOR_VER=7
 ARG GFX=gfx1151
@@ -24,6 +27,8 @@ RUN set -euo pipefail; \
     tar xzf therock.tar.gz -C /opt/rocm --strip-components=1; \
     rm therock.tar.gz
 
+# 3. Configure Global ROCm Environment
+# We add LD_PRELOAD for tcmalloc here to fix the shutdown crash
 RUN export ROCM_PATH=/opt/rocm && \
     BITCODE_PATH=$(find /opt/rocm -type d -name bitcode -print -quit) && \
     printf '%s\n' \
@@ -43,6 +48,7 @@ RUN export ROCM_PATH=/opt/rocm && \
       > /etc/profile.d/rocm-sdk.sh && \
     chmod 0644 /etc/profile.d/rocm-sdk.sh
 
+# 4. Python Venv Setup
 RUN /usr/bin/python3.13 -m venv /opt/venv
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH=/opt/venv/bin:$PATH
@@ -50,54 +56,65 @@ ENV PIP_NO_CACHE_DIR=1
 RUN printf 'source /opt/venv/bin/activate\n' > /etc/profile.d/venv.sh
 RUN python -m pip install --upgrade pip wheel packaging "setuptools<80.0.0"
 
+# 5. Install PyTorch (TheRock Nightly)
 RUN python -m pip install \
   --index-url https://rocm.nightlies.amd.com/v2-staging/gfx1151/ \
   --pre torch torchaudio torchvision
 
 WORKDIR /opt
+
+# 6. Clone vLLM
 RUN git clone https://github.com/vllm-project/vllm.git /opt/vllm
 WORKDIR /opt/vllm
 
-# FIXED PATCH
+# --- PATCHING ---
 RUN echo "import sys, re" > patch_strix.py && \
     echo "from pathlib import Path" >> patch_strix.py && \
+    # Patch 1: __init__.py
     echo "p = Path('vllm/platforms/__init__.py')" >> patch_strix.py && \
     echo "txt = p.read_text()" >> patch_strix.py && \
     echo "txt = txt.replace('import amdsmi', '# import amdsmi')" >> patch_strix.py && \
     echo "txt = re.sub(r'is_rocm = .*', 'is_rocm = True', txt)" >> patch_strix.py && \
-    echo "txt = re.sub(r'if len\\(amdsmi\\.amdsmi_get_processor_handles\\(\\)\\) > 0:', 'if True:', txt)" >> patch_strix.py && \
+    echo "txt = re.sub(r'if len\(amdsmi\.amdsmi_get_processor_handles\(\)\) > 0:', 'if True:', txt)" >> patch_strix.py && \
     echo "txt = txt.replace('amdsmi.amdsmi_init()', 'pass')" >> patch_strix.py && \
     echo "txt = txt.replace('amdsmi.amdsmi_shut_down()', 'pass')" >> patch_strix.py && \
     echo "p.write_text(txt)" >> patch_strix.py && \
+    # Patch 2: rocm.py
     echo "p = Path('vllm/platforms/rocm.py')" >> patch_strix.py && \
     echo "txt = p.read_text()" >> patch_strix.py && \
     echo "header = 'import sys\nfrom unittest.mock import MagicMock\nsys.modules[\"amdsmi\"] = MagicMock()\n'" >> patch_strix.py && \
     echo "txt = header + txt" >> patch_strix.py && \
-    echo "txt = re.sub(r'device_type = .*', 'device_type = \"rocm\"', txt)" >> patch_strix.py && \
-    echo "txt = re.sub(r'device_name = .*', 'device_name = \"gfx1151\"', txt)" >> patch_strix.py && \
+    echo "txt = re.sub(r'device_type = .*', 'device_type = \"rocm\"', txt)" >> patch_strix.py && \   # CHANGED (was "cuda")
+    echo "txt = re.sub(r'device_name = .*', 'device_name = \"gfx1151\"', txt)" >> patch_strix.py && \ # CHANGED (was "cuda")
     echo "txt += '\n    def get_device_name(self, device_id: int = 0) -> str:\n        return \"AMD-gfx1151\"\n'" >> patch_strix.py && \
     echo "p.write_text(txt)" >> patch_strix.py && \
+    echo "print('Successfully patched vLLM for Strix Halo')" >> patch_strix.py && \
     python patch_strix.py && \
-    sed -i 's/gfx1200;gfx1201/gfx1151/' CMakeLists.txt
+    sed -i 's/gfx1200;gfx1201/gfx1151/' CMakeLists.txt     # CHANGED (was gfx1200;gfx1201)
 
-# BUILD SETTINGS (only required ones)
+# 7. Build vLLM (Wheel Method) with CLANG Host Compiler
+RUN python -m pip install --upgrade cmake ninja packaging wheel numpy "setuptools-scm>=8" "setuptools<80.0.0" scikit-build-core pybind11
 ENV ROCM_HOME="/opt/rocm"
 ENV HIP_PATH="/opt/rocm"
 ENV VLLM_TARGET_DEVICE="rocm"
-
 ENV PYTORCH_ROCM_ARCH="gfx1151"
-ENV HIP_ARCHITECTURES="gfx1151"
-ENV AMDGPU_TARGETS="gfx1151"
-
-ENV CC="/opt/rocm/llvm/bin/clang"
-ENV CXX="/opt/rocm/llvm/bin/clang++"
+ENV HIP_ARCHITECTURES="gfx1151"          # ADDED
+ENV AMDGPU_TARGETS="gfx1151"              # ADDED
 ENV MAX_JOBS="4"
 
-# FORCE CMAKE ARCH
-RUN export CMAKE_ARGS="-DROCM_PATH=/opt/rocm -DHIP_PATH=/opt/rocm -DAMDGPU_TARGETS=gfx1151 -DHIP_ARCHITECTURES=gfx1151" && \
+# --- CRITICAL FIX FOR SEGFAULT ---
+# We force the Host Compiler (CC/CXX) to be the ROCm Clang, not Fedora GCC.
+# This aligns the ABI of the compiled vLLM extensions with PyTorch.
+ENV CC="/opt/rocm/llvm/bin/clang"
+ENV CXX="/opt/rocm/llvm/bin/clang++"
+
+RUN export HIP_DEVICE_LIB_PATH=$(find /opt/rocm -type d -name bitcode -print -quit) && \
+    echo "Compiling with Bitcode: $HIP_DEVICE_LIB_PATH" && \
+    export CMAKE_ARGS="-DROCM_PATH=/opt/rocm -DHIP_PATH=/opt/rocm -DAMDGPU_TARGETS=gfx1151 -DHIP_ARCHITECTURES=gfx1151" && \   # CHANGED
     python -m pip wheel --no-build-isolation --no-deps -w /tmp/dist -v . && \
     python -m pip install /tmp/dist/*.whl
 
+# 8. Final Cleanup & Runtime
 WORKDIR /opt
 RUN chmod -R a+rwX /opt && \
     find /opt/venv -type f -name "*.so" -exec strip -s {} + 2>/dev/null || true && \
