@@ -3,11 +3,11 @@ FROM registry.fedoraproject.org/fedora:43
 # 1. System Base & Build Tools
 # Added 'gperftools-libs' for tcmalloc (fixes double-free)
 RUN dnf -y install --setopt=install_weak_deps=False --nodocs \
-      python3.13 python3.13-devel git rsync libatomic bash ca-certificates curl \
-      gcc gcc-c++ binutils make ffmpeg-free \
-      cmake ninja-build aria2c tar xz vim nano \
-      libdrm-devel zlib-devel openssl-devel \
-      numactl-devel gperftools-libs \
+  python3.13 python3.13-devel git rsync libatomic bash ca-certificates curl \
+  gcc gcc-c++ binutils make ffmpeg-free \
+  cmake ninja-build aria2c tar xz vim nano \
+  libdrm-devel zlib-devel openssl-devel \
+  numactl-devel gperftools-libs \
   && dnf clean all && rm -rf /var/cache/dnf/*
 
 # 2. Install "TheRock" ROCm SDK (Tarball Method)
@@ -15,38 +15,38 @@ WORKDIR /tmp
 ARG ROCM_MAJOR_VER=7
 ARG GFX=gfx1151
 RUN set -euo pipefail; \
-    BASE="https://therock-nightly-tarball.s3.amazonaws.com"; \
-    PREFIX="therock-dist-linux-${GFX}-${ROCM_MAJOR_VER}"; \
-    KEY="$(curl -s "${BASE}?list-type=2&prefix=${PREFIX}" \
-      | tr '<' '\n' \
-      | grep -o "therock-dist-linux-${GFX}-${ROCM_MAJOR_VER}\..*\.tar\.gz" \
-      | sort -V | tail -n1)"; \
-    echo "Downloading Latest Tarball: ${KEY}"; \
-    aria2c -x 16 -s 16 -j 16 --file-allocation=none "${BASE}/${KEY}" -o therock.tar.gz; \
-    mkdir -p /opt/rocm; \
-    tar xzf therock.tar.gz -C /opt/rocm --strip-components=1; \
-    rm therock.tar.gz
+  BASE="https://therock-nightly-tarball.s3.amazonaws.com"; \
+  PREFIX="therock-dist-linux-${GFX}-${ROCM_MAJOR_VER}"; \
+  KEY="$(curl -s "${BASE}?list-type=2&prefix=${PREFIX}" \
+  | tr '<' '\n' \
+  | grep -o "therock-dist-linux-${GFX}-${ROCM_MAJOR_VER}\..*\.tar\.gz" \
+  | sort -V | tail -n1)"; \
+  echo "Downloading Latest Tarball: ${KEY}"; \
+  aria2c -x 16 -s 16 -j 16 --file-allocation=none "${BASE}/${KEY}" -o therock.tar.gz; \
+  mkdir -p /opt/rocm; \
+  tar xzf therock.tar.gz -C /opt/rocm --strip-components=1; \
+  rm therock.tar.gz
 
 # 3. Configure Global ROCm Environment
 # We add LD_PRELOAD for tcmalloc here to fix the shutdown crash
 RUN export ROCM_PATH=/opt/rocm && \
-    BITCODE_PATH=$(find /opt/rocm -type d -name bitcode -print -quit) && \
-    printf '%s\n' \
-      "export ROCM_PATH=/opt/rocm" \
-      "export HIP_PLATFORM=amd" \
-      "export HIP_PATH=/opt/rocm" \
-      "export HIP_CLANG_PATH=/opt/rocm/llvm/bin" \
-      "export HIP_DEVICE_LIB_PATH=$BITCODE_PATH" \
-      "export PATH=$ROCM_PATH/bin:$ROCM_PATH/llvm/bin:\$PATH" \
-      "export LD_LIBRARY_PATH=$ROCM_PATH/lib:$ROCM_PATH/lib64:$ROCM_PATH/llvm/lib:\$LD_LIBRARY_PATH" \
-      "export ROCBLAS_USE_HIPBLASLT=1" \
-      "export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1" \
-      "export VLLM_TARGET_DEVICE=rocm" \
-      "export HIP_FORCE_DEV_KERNARG=1" \
-      "export RAY_EXPERIMENTAL_NOSET_ROCR_VISIBLE_DEVICES=1" \
-      "export LD_PRELOAD=/usr/lib64/libtcmalloc_minimal.so.4" \
-      > /etc/profile.d/rocm-sdk.sh && \
-    chmod 0644 /etc/profile.d/rocm-sdk.sh
+  BITCODE_PATH=$(find /opt/rocm -type d -name bitcode -print -quit) && \
+  printf '%s\n' \
+  "export ROCM_PATH=/opt/rocm" \
+  "export HIP_PLATFORM=amd" \
+  "export HIP_PATH=/opt/rocm" \
+  "export HIP_CLANG_PATH=/opt/rocm/llvm/bin" \
+  "export HIP_DEVICE_LIB_PATH=$BITCODE_PATH" \
+  "export PATH=$ROCM_PATH/bin:$ROCM_PATH/llvm/bin:\$PATH" \
+  "export LD_LIBRARY_PATH=$ROCM_PATH/lib:$ROCM_PATH/lib64:$ROCM_PATH/llvm/lib:\$LD_LIBRARY_PATH" \
+  "export ROCBLAS_USE_HIPBLASLT=1" \
+  "export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1" \
+  "export VLLM_TARGET_DEVICE=rocm" \
+  "export HIP_FORCE_DEV_KERNARG=1" \
+  "export RAY_EXPERIMENTAL_NOSET_ROCR_VISIBLE_DEVICES=1" \
+  "export LD_PRELOAD=/usr/lib64/libtcmalloc_minimal.so.4" \
+  > /etc/profile.d/rocm-sdk.sh && \
+  chmod 0644 /etc/profile.d/rocm-sdk.sh
 
 # 4. Python Venv Setup
 RUN /usr/bin/python3.13 -m venv /opt/venv
@@ -67,10 +67,10 @@ WORKDIR /opt
 ENV FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
 
 RUN git clone https://github.com/ROCm/flash-attention.git &&\ 
-    cd flash-attention &&\
-    git checkout main_perf &&\
-    python setup.py install && \
-    cd /opt && rm -rf /opt/flash-attention
+  cd flash-attention &&\
+  git checkout main_perf &&\
+  python setup.py install && \
+  cd /opt && rm -rf /opt/flash-attention
 
 # 6. Clone vLLM
 RUN git clone https://github.com/vllm-project/vllm.git /opt/vllm
@@ -78,28 +78,28 @@ WORKDIR /opt/vllm
 
 # --- PATCHING ---
 RUN echo "import sys, re" > patch_strix.py && \
-    echo "from pathlib import Path" >> patch_strix.py && \
-    # Patch 1: __init__.py
-    echo "p = Path('vllm/platforms/__init__.py')" >> patch_strix.py && \
-    echo "txt = p.read_text()" >> patch_strix.py && \
-    echo "txt = txt.replace('import amdsmi', '# import amdsmi')" >> patch_strix.py && \
-    echo "txt = re.sub(r'is_rocm = .*', 'is_rocm = True', txt)" >> patch_strix.py && \
-    echo "txt = re.sub(r'if len\(amdsmi\.amdsmi_get_processor_handles\(\)\) > 0:', 'if True:', txt)" >> patch_strix.py && \
-    echo "txt = txt.replace('amdsmi.amdsmi_init()', 'pass')" >> patch_strix.py && \
-    echo "txt = txt.replace('amdsmi.amdsmi_shut_down()', 'pass')" >> patch_strix.py && \
-    echo "p.write_text(txt)" >> patch_strix.py && \
-    # Patch 2: rocm.py
-    echo "p = Path('vllm/platforms/rocm.py')" >> patch_strix.py && \
-    echo "txt = p.read_text()" >> patch_strix.py && \
-    echo "header = 'import sys\nfrom unittest.mock import MagicMock\nsys.modules[\"amdsmi\"] = MagicMock()\n'" >> patch_strix.py && \
-    echo "txt = header + txt" >> patch_strix.py && \
-    echo "txt = re.sub(r'device_type = .*', 'device_type = \"rocm\"', txt)" >> patch_strix.py && \  
-    echo "txt = re.sub(r'device_name = .*', 'device_name = \"gfx1151\"', txt)" >> patch_strix.py && \ 
-    echo "txt += '\n    def get_device_name(self, device_id: int = 0) -> str:\n        return \"AMD-gfx1151\"\n'" >> patch_strix.py && \
-    echo "p.write_text(txt)" >> patch_strix.py && \
-    echo "print('Successfully patched vLLM for Strix Halo')" >> patch_strix.py && \
-    python patch_strix.py && \
-    sed -i 's/gfx1200;gfx1201/gfx1151/' CMakeLists.txt  
+  echo "from pathlib import Path" >> patch_strix.py && \
+  # Patch 1: __init__.py
+  echo "p = Path('vllm/platforms/__init__.py')" >> patch_strix.py && \
+  echo "txt = p.read_text()" >> patch_strix.py && \
+  echo "txt = txt.replace('import amdsmi', '# import amdsmi')" >> patch_strix.py && \
+  echo "txt = re.sub(r'is_rocm = .*', 'is_rocm = True', txt)" >> patch_strix.py && \
+  echo "txt = re.sub(r'if len\(amdsmi\.amdsmi_get_processor_handles\(\)\) > 0:', 'if True:', txt)" >> patch_strix.py && \
+  echo "txt = txt.replace('amdsmi.amdsmi_init()', 'pass')" >> patch_strix.py && \
+  echo "txt = txt.replace('amdsmi.amdsmi_shut_down()', 'pass')" >> patch_strix.py && \
+  echo "p.write_text(txt)" >> patch_strix.py && \
+  # Patch 2: rocm.py
+  echo "p = Path('vllm/platforms/rocm.py')" >> patch_strix.py && \
+  echo "txt = p.read_text()" >> patch_strix.py && \
+  echo "header = 'import sys\nfrom unittest.mock import MagicMock\nsys.modules[\"amdsmi\"] = MagicMock()\n'" >> patch_strix.py && \
+  echo "txt = header + txt" >> patch_strix.py && \
+  echo "txt = re.sub(r'device_type = .*', 'device_type = \"rocm\"', txt)" >> patch_strix.py && \  
+  echo "txt = re.sub(r'device_name = .*', 'device_name = \"gfx1151\"', txt)" >> patch_strix.py && \ 
+  echo "txt += '\n    def get_device_name(self, device_id: int = 0) -> str:\n        return \"AMD-gfx1151\"\n'" >> patch_strix.py && \
+  echo "p.write_text(txt)" >> patch_strix.py && \
+  echo "print('Successfully patched vLLM for Strix Halo')" >> patch_strix.py && \
+  python patch_strix.py && \
+  sed -i 's/gfx1200;gfx1201/gfx1151/' CMakeLists.txt  
 
 # 7. Build vLLM (Wheel Method) with CLANG Host Compiler
 RUN python -m pip install --upgrade cmake ninja packaging wheel numpy "setuptools-scm>=8" "setuptools<80.0.0" scikit-build-core pybind11
@@ -118,18 +118,38 @@ ENV CC="/opt/rocm/llvm/bin/clang"
 ENV CXX="/opt/rocm/llvm/bin/clang++"
 
 RUN export HIP_DEVICE_LIB_PATH=$(find /opt/rocm -type d -name bitcode -print -quit) && \
-    echo "Compiling with Bitcode: $HIP_DEVICE_LIB_PATH" && \
-    export CMAKE_ARGS="-DROCM_PATH=/opt/rocm -DHIP_PATH=/opt/rocm -DAMDGPU_TARGETS=gfx1151 -DHIP_ARCHITECTURES=gfx1151" && \   
-    python -m pip wheel --no-build-isolation --no-deps -w /tmp/dist -v . && \
-    python -m pip install /tmp/dist/*.whl
+  echo "Compiling with Bitcode: $HIP_DEVICE_LIB_PATH" && \
+  export CMAKE_ARGS="-DROCM_PATH=/opt/rocm -DHIP_PATH=/opt/rocm -DAMDGPU_TARGETS=gfx1151 -DHIP_ARCHITECTURES=gfx1151" && \   
+  python -m pip wheel --no-build-isolation --no-deps -w /tmp/dist -v . && \
+  python -m pip install /tmp/dist/*.whl
+
+# --- bitsandbytes (ROCm) ---
+WORKDIR /opt
+RUN git clone -b rocm_enabled_multi_backend https://github.com/ROCm/bitsandbytes.git
+WORKDIR /opt/bitsandbytes
+
+# Explicitly set HIP_PLATFORM (Docker ENV, not /etc/profile)
+ENV HIP_PLATFORM="amd"
+ENV CMAKE_PREFIX_PATH="/opt/rocm"
+
+# Force CMake to use the System ROCm Compiler (/opt/rocm/llvm/bin/clang++)
+RUN cmake -S . \
+  -DGPU_TARGETS="gfx1151" \
+  -DBNB_ROCM_ARCH="gfx1151" \
+  -DCOMPUTE_BACKEND=hip \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  && \
+  make -j$(nproc) && \
+  python -m pip install --no-cache-dir . --no-build-isolation --no-deps
 
 # 8. Final Cleanup & Runtime
 WORKDIR /opt
 RUN chmod -R a+rwX /opt && \
-    find /opt/venv -type f -name "*.so" -exec strip -s {} + 2>/dev/null || true && \
-    find /opt/venv -type d -name "__pycache__" -prune -exec rm -rf {} + && \
-    rm -rf /root/.cache/pip || true && \
-    dnf clean all && rm -rf /var/cache/dnf/*
+  find /opt/venv -type f -name "*.so" -exec strip -s {} + 2>/dev/null || true && \
+  find /opt/venv -type d -name "__pycache__" -prune -exec rm -rf {} + && \
+  rm -rf /root/.cache/pip || true && \
+  dnf clean all && rm -rf /var/cache/dnf/*
 
 COPY scripts/01-rocm-env-for-triton.sh /etc/profile.d/01-rocm-env-for-triton.sh
 COPY scripts/99-toolbox-banner.sh /etc/profile.d/99-toolbox-banner.sh
