@@ -529,16 +529,16 @@
                         name: modelName,
                         quant: run.quant,
                         params: run.params_b || run.name_params_b,
-                        tp1: null,
-                        tp2: null
+                        triton: null,
+                        rocm: null
                     };
                 }
 
                 const m = testGroups[run.test].models[modelName];
 
-                // Assign TP value
-                if (run.env === "TP1") m.tp1 = run.tps_mean;
-                if (run.env === "TP2") m.tp2 = run.tps_mean;
+                // Assign Backend value
+                if (run.backend === "Triton") m.triton = run.tps_mean;
+                if (run.backend === "ROCm") m.rocm = run.tps_mean;
             });
 
             // Convert map to array for sorting
@@ -681,7 +681,8 @@
             thead.innerHTML = `
             <tr>
                 <th class="col-model">Model</th>
-                <th class="col-data">TP1</th>
+                <th class="col-data">Triton Attention</th>
+                <th class="col-data">ROCm Attention</th>
             </tr>
         `;
             table.appendChild(thead);
@@ -698,7 +699,15 @@
                 // Values
                 // Pass unit from meta
                 const unit = meta ? meta.unit : "";
-                const val1 = formatVal(m.tp1, unit);
+                const val1 = formatVal(m.triton, unit);
+
+                // Special handling for ROCm column where we want 'X' for crashes/missing if Triton has data
+                let val2;
+                if ((m.rocm === null || m.rocm === 0) && m.triton > 0) {
+                    val2 = '<span class="val-na" style="color: #ef4444; font-weight:bold;">X</span>';
+                } else {
+                    val2 = formatVal(m.rocm, unit);
+                }
 
                 tr.innerHTML = `
                 <td>
@@ -708,6 +717,7 @@
                     </div>
                 </td>
                 <td class="col-data">${val1}</td>
+                <td class="col-data">${val2}</td>
             `;
                 tbody.appendChild(tr);
             });

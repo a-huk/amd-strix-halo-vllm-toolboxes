@@ -8,7 +8,7 @@
       "quant": "AWQ",
       "params_b": 14.0,
       "name_params_b": 14.0,
-      "backend": "vLLM",
+      "backend": "Triton",
       "error": false,
       "test": "Throughput",
       "tps_mean": 112.69232830266365
@@ -21,7 +21,7 @@
       "quant": "BF16",
       "params_b": 8.0,
       "name_params_b": 8.0,
-      "backend": "vLLM",
+      "backend": "Triton",
       "error": false,
       "test": "Throughput",
       "tps_mean": 278.99494393048457
@@ -34,7 +34,7 @@
       "quant": "BF16",
       "params_b": 12.0,
       "name_params_b": 12.0,
-      "backend": "vLLM",
+      "backend": "Triton",
       "error": false,
       "test": "Throughput",
       "tps_mean": 162.71078485804028
@@ -47,7 +47,7 @@
       "quant": "GPTQ",
       "params_b": 80.0,
       "name_params_b": 80.0,
-      "backend": "vLLM",
+      "backend": "Triton",
       "error": false,
       "test": "Throughput",
       "tps_mean": 112.62418795067208
@@ -60,7 +60,7 @@
       "quant": "BF16",
       "params_b": 20.0,
       "name_params_b": 20.0,
-      "backend": "vLLM",
+      "backend": "Triton",
       "error": false,
       "test": "Throughput",
       "tps_mean": 313.85817605876395
@@ -73,7 +73,7 @@
       "quant": "GPTQ",
       "params_b": 30.0,
       "name_params_b": 30.0,
-      "backend": "vLLM",
+      "backend": "Triton",
       "error": false,
       "test": "Throughput",
       "tps_mean": 271.7264154071495
@@ -86,10 +86,75 @@
       "quant": "BF16",
       "params_b": 120.0,
       "name_params_b": 120.0,
-      "backend": "vLLM",
+      "backend": "Triton",
       "error": false,
       "test": "Throughput",
       "tps_mean": 109.73523843987172
+    },
+    {
+      "model": "Qwen/Qwen3-14B-AWQ",
+      "model_clean": "Qwen/Qwen3-14B-AWQ",
+      "env": "TP1",
+      "gpu_config": "single",
+      "quant": "AWQ",
+      "params_b": 14.0,
+      "name_params_b": 14.0,
+      "backend": "ROCm",
+      "error": false,
+      "test": "Throughput",
+      "tps_mean": 118.62544339374007
+    },
+    {
+      "model": "meta-llama/Meta-Llama-3.1-8B-Instruct",
+      "model_clean": "meta-llama/Meta-Llama-3.1-8B-Instruct",
+      "env": "TP1",
+      "gpu_config": "single",
+      "quant": "BF16",
+      "params_b": 8.0,
+      "name_params_b": 8.0,
+      "backend": "ROCm",
+      "error": false,
+      "test": "Throughput",
+      "tps_mean": 320.4458308584372
+    },
+    {
+      "model": "google/gemma-3-12b-it",
+      "model_clean": "google/gemma-3-12b-it",
+      "env": "TP1",
+      "gpu_config": "single",
+      "quant": "BF16",
+      "params_b": 12.0,
+      "name_params_b": 12.0,
+      "backend": "ROCm",
+      "error": false,
+      "test": "Throughput",
+      "tps_mean": 275.34859975563967
+    },
+    {
+      "model": "openai/gpt-oss-20b",
+      "model_clean": "openai/gpt-oss-20b",
+      "env": "TP1",
+      "gpu_config": "single",
+      "quant": "BF16",
+      "params_b": 20.0,
+      "name_params_b": 20.0,
+      "backend": "ROCm",
+      "error": false,
+      "test": "Throughput",
+      "tps_mean": 318.9683005103833
+    },
+    {
+      "model": "openai/gpt-oss-120b",
+      "model_clean": "openai/gpt-oss-120b",
+      "env": "TP1",
+      "gpu_config": "single",
+      "quant": "BF16",
+      "params_b": 120.0,
+      "name_params_b": 120.0,
+      "backend": "ROCm",
+      "error": false,
+      "test": "Throughput",
+      "tps_mean": 114.91339037290285
     }
   ]
 }
