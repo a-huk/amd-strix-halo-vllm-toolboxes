@@ -154,6 +154,10 @@ RUN chmod -R a+rwX /opt && \
 COPY scripts/01-rocm-env-for-triton.sh /etc/profile.d/01-rocm-env-for-triton.sh
 COPY scripts/99-toolbox-banner.sh /etc/profile.d/99-toolbox-banner.sh
 COPY scripts/zz-venv-last.sh /etc/profile.d/zz-venv-last.sh
+COPY scripts/start_vllm.py /usr/local/bin/start-vllm
+COPY benchmarks/max_context_results.json /opt/max_context_results.json
+COPY benchmarks/run_vllm_bench.py /opt/run_vllm_bench.py
+RUN chmod 0644 /etc/profile.d/*.sh && chmod +x /usr/local/bin/start-vllm && chmod 0644 /opt/max_context_results.json
 RUN chmod 0644 /etc/profile.d/*.sh
 RUN printf 'ulimit -S -c 0\n' > /etc/profile.d/90-nocoredump.sh && chmod 0644 /etc/profile.d/90-nocoredump.sh
 
