@@ -1,6 +1,6 @@
-# AMD Strix Halo (gfx1151) — vLLM Toolbox/Container
+# AMD Strix Halo (gfx1100) — vLLM Toolbox/Container
 
-An **Fedora 43** Docker/Podman container that is **Toolbx-compatible** (usable as a Fedora toolbox) for serving LLMs with **vLLM** on **AMD Ryzen AI Max “Strix Halo” (gfx1151)**. Built on the **TheRock nightly builds** for ROCm.
+An **Fedora 43** Docker/Podman container that is **Toolbx-compatible** (usable as a Fedora toolbox) for serving LLMs with **vLLM** on **AMD Ryzen AI Max “Strix Halo” (gfx1100)**. Built on the **TheRock nightly builds** for ROCm.
 
 
 ---
@@ -37,7 +37,7 @@ View full benchmarks at: [https://kyuz0.github.io/amd-strix-halo-vllm-toolboxes/
 
 ## 1) Toolbx vs Docker/Podman
 
-The `kyuz0/vllm-therock-gfx1151:latest` image can be used both as: 
+The `kyuz0/vllm-therock-gfx1100:latest` image can be used both as: 
 
 * **Fedora Toolbx (recommended for development):** Toolbx shares your **HOME** and user, so models/configs live on the host. Great for iterating quickly while keeping the host clean. 
 * **Docker/Podman (recommended for deployment/perf):** Use for running vLLM as a service (host networking, IPC tuning, etc.). Always **mount a host directory** for model weights so they stay outside the container.
@@ -50,7 +50,7 @@ Create a toolbox that exposes the GPU and relaxes seccomp to avoid ROCm syscall 
 
 ```bash
 toolbox create vllm \
-  --image docker.io/kyuz0/vllm-therock-gfx1151:latest \
+  --image docker.io/kyuz0/vllm-therock-gfx1100:latest \
   -- --device /dev/dri --device /dev/kfd \
   --group-add video --group-add render --security-opt seccomp=unconfined
 ```
@@ -81,7 +81,7 @@ Ubuntu’s toolbox package still breaks GPU access, so use Distrobox instead:
 
 ```bash
 distrobox create -n vllm \
-  --image docker.io/kyuz0/vllm-therock-gfx1151:latest \
+  --image docker.io/kyuz0/vllm-therock-gfx1100:latest \
   --additional-flags "--device /dev/kfd --device /dev/dri --group-add video --group-add render --security-opt seccomp=unconfined"
 
 distrobox enter vllm

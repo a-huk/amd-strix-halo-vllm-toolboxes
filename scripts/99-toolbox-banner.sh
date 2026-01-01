@@ -83,13 +83,13 @@ cat <<'ASCII'
                                v L L M                                      
 ASCII
 echo
-printf 'AMD STRIX HALO — vLLM Toolbox (gfx1151, ROCm via TheRock)\n'
+printf 'AMD STRIX HALO — vLLM Toolbox (gfx1100, ROCm via TheRock)\n'
 [[ -n "$ROCM_VER" ]] && printf 'ROCm nightly: %s\n' "$ROCM_VER"
 echo
 printf 'Machine: %s\n' "$MACHINE"
 printf 'GPU    : %s\n\n' "$GPU"
 printf 'Repo   : https://github.com/kyuz0/amd-strix-halo-vllm-toolboxes\n'
-printf 'Image  : docker.io/kyuz0/vllm-therock-gfx1151:latest\n\n'
+printf 'Image  : docker.io/kyuz0/vllm-therock-gfx1100:latest\n\n'
 printf 'Included:\n'
 printf '  - %-16s → %s\n' "start-vllm (TUI)" "Interactive launcher: Model select, Multi-GPU & Cache handling"
 printf '  - %-16s → %s\n' "vLLM server" "vllm serve meta-llama/Meta-Llama-3.1-8B-Instruct"
